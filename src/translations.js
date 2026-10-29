@@ -1,6 +1,6 @@
 // Language dictionary containing translations for English and Arabic
 const getTranslations = (settings) => {
-    return {
+    const translations = {
         en: {
             // English translations
             "#settings": "Settings",
@@ -28,14 +28,14 @@ const getTranslations = (settings) => {
             "#refresh-message": "Refresh the page to see the changes.",
             ".bmc-btn-text": "Support the project",
             ".feedback": `
-			<span> We love to hear your feedback through our </span> <a href="https://forms.gle/mDDjh44MKRVemWX86" target="_blank">Form</a> or 
+			<span> We love to hear your feedback through our </span> <a href="https://forms.gle/mDDjh44MKRVemWX86" target="_blank">Form</a> or
 			<a href="mailto:md.alganzory@gmail.com" target="_blank">Email</a> ❤️
 			`,
             "#whitelist-desc": `
-				<p id="whitelist-desc"> Detection is 
-				<span id="whitelist-status-on" class="blue-text"> On </span> 
-				<span id="whitelist-status-off" class="red-text hidden" > Off </span> 
-				for this website </p>
+				 Detection is
+				<span id="whitelist-status-on" class="blue-text"> On </span>
+				<span id="whitelist-status-off" class="red-text hidden" > Off </span>
+				for this website
 			`,
         },
         ar: {
@@ -65,14 +65,14 @@ const getTranslations = (settings) => {
             "#refresh-message": "أعد تحميل الصفحة لترى التغييرات.",
             ".bmc-btn-text": "دعم المشروع",
             ".feedback": `
-			<span> نحب أن نسمع رأيك عبر </span> <a href="https://forms.gle/mDDjh44MKRVemWX86" target="_blank">الاستمارة</a> أو 
+			<span> نحب أن نسمع رأيك عبر </span> <a href="https://forms.gle/mDDjh44MKRVemWX86" target="_blank">الاستمارة</a> أو
 			<a href="mailto:md.alganzory@gmail.com" target="_blank">البريد الإلكتروني</a> ❤️
 			`,
             "#whitelist-desc": `
-				<p id="whitelist-desc"> الفحص 
-				<span id="whitelist-status-on" class="blue-text"> مفعل </span> 
-				<span id="whitelist-status-off" class="red-text hidden" > معطل </span> 
-				لهذا الموقع </p>
+				 الفحص
+				<span id="whitelist-status-on" class="blue-text"> مفعل </span>
+				<span id="whitelist-status-off" class="red-text hidden" > معطل </span>
+				لهذا الموقع
 			`,
         },
         // turkish
@@ -106,10 +106,10 @@ const getTranslations = (settings) => {
 			<a href="mailto:md.alganzory@gmail.com" target="_blank">E-mail</a> yoluyla bize bildirin.❤️
 			`,
             "#whitelist-desc": `
-				<p id="whitelist-desc"> Bu web sitesi için algılama
-				<span id="whitelist-status-on" class="blue-text"> Açık </span> 
-				<span id="whitelist-status-off" class="red-text hidden" > Kapalı </span> 
-				</p>
+				 Bu web sitesi için algılama
+				<span id="whitelist-status-on" class="blue-text"> Açık </span>
+				<span id="whitelist-status-off" class="red-text hidden" > Kapalı </span>
+
 			`,
         },
         //urdu
@@ -143,13 +143,57 @@ const getTranslations = (settings) => {
 			<a href="mailto:md.alganzory@gmail.com" target="_blank">E-mail</a> ای میل.❤️
 			`,
             "#whitelist-desc": `
-				<p id="whitelist-desc"> کھوج ہے
-				<span id="whitelist-status-on" class="blue-text"> جلنا </span> 
-				<span id="whitelist-status-off" class="red-text hidden" > بند </span> 
-				</p>
+				 کھوج ہے
+				<span id="whitelist-status-on" class="blue-text"> جلنا </span>
+				<span id="whitelist-status-off" class="red-text hidden" > بند </span>
+
 			`,
         },
     };
+    const popupTranslations = {
+        en: [
+            "Protection",
+            "Protection is active",
+            "Protection is paused",
+            "Saved automatically",
+            "Feedback",
+            "Support the project",
+        ],
+        ar: [
+            "الحماية",
+            "الحماية مفعّلة",
+            "الحماية متوقفة",
+            "يتم الحفظ تلقائيًا",
+            "ملاحظات",
+            "دعم المشروع",
+        ],
+        tr: [
+            "Koruma",
+            "Koruma etkin",
+            "Koruma duraklatıldı",
+            "Otomatik kaydedilir",
+            "Geri bildirim",
+            "Projeyi destekle",
+        ],
+        ur: [
+            "تحفظ",
+            "تحفظ فعال ہے",
+            "تحفظ روک دیا گیا ہے",
+            "خود بخود محفوظ ہوتا ہے",
+            "رائے دیں",
+            "منصوبے کی حمایت کریں",
+        ],
+    };
+    for (const [lang, text] of Object.entries(popupTranslations)) {
+        Object.assign(translations[lang], {
+            "#protection-label": text[0],
+            "#protection-status": settings.status ? text[1] : text[2],
+            "#autosave": text[3],
+            "#feedback-link": text[4],
+            ".support-text": text[5],
+        });
+    }
+    return translations;
 };
 
 const HB_TRANSLATIONS_DIR = {

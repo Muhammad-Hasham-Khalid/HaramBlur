@@ -16,20 +16,20 @@ const refreshableSettings = [
 
 const allSettings = ["blurAmount", "gray", ...refreshableSettings];
 
-var currentWebsite, refreshMessage, container;
+var currentWebsite, refreshMessage;
 
 const initCalls = () => {
     const browserLang = navigator.language?.split("-")[0] ?? "en";
     changeLanguage(settings.language ?? browserLang, settings);
-    displaySettings(settings);
     addListeners();
+    displaySettings(settings);
 };
 
 function initPopup() {
     loadLocalSettings()
         .then(() => getCurrentWebsite())
         .then(() => {
-            if (document.readyState === "complete" || "interactive") {
+            if (document.readyState !== "loading") {
                 initCalls();
             } else {
                 document.addEventListener("DOMContentLoaded", initCalls);
@@ -42,11 +42,16 @@ function getCurrentWebsite() {
         chrome.tabs?.query(
             { active: true, currentWindow: true },
             function (tabs) {
+                if (!tabs?.[0]?.id) {
+                    resolve();
+                    return;
+                }
                 chrome.tabs.sendMessage(
                     tabs[0].id,
                     { type: "getCurrentWebsite" },
                     function (response) {
-                        console.log("🚀 ~ response:", response);
+                        // Internal Chrome pages do not have a content script.
+                        void chrome.runtime.lastError;
                         currentWebsite =
                             response?.currentWebsite?.split("www.")?.[1] ??
                             response?.currentWebsite ??
@@ -62,16 +67,15 @@ function getCurrentWebsite() {
 function loadLocalSettings() {
     return new Promise(function (resolve) {
         chrome.storage.sync.get(["hb-settings"], function (storage) {
-            settings = storage["hb-settings"];
+            settings = storage["hb-settings"] ?? {};
+            settings.whitelist ??= [];
             resolve();
         });
     });
 }
 
 function toggleAllInputs() {
-    if (container) {
-        container.style.opacity = settings.status ? 1 : 0.5;
-    }
+    updateProtectionStatus();
     allSettings.forEach(function (setting) {
         document.querySelector("input[name=" + setting + "]").disabled =
             !settings.status;
@@ -79,7 +83,6 @@ function toggleAllInputs() {
 }
 
 function displaySettings(settings) {
-    console.log("display settings", settings);
     document.querySelector("input[name=status]").checked = settings.status;
     document.querySelector("input[name=blurryStartMode]").checked =
         settings.blurryStartMode;
@@ -105,6 +108,7 @@ function displaySettings(settings) {
         settings.unblurVideos;
     document.getElementById("language").value = settings.language;
     displayWhiteList();
+    document.querySelectorAll(".form-range").forEach(updateRangeDisplay);
     toggleAllInputs();
 }
 
@@ -150,8 +154,11 @@ function addListeners() {
         .getElementById("whitelist")
         .addEventListener("change", updateWhitelist);
 
+    document.querySelectorAll(".form-range").forEach((input) => {
+        input.addEventListener("input", () => updateRangeDisplay(input));
+    });
+
     refreshMessage = document.querySelector("#refresh-message");
-    container = document.querySelector("#container");
 }
 
 function displayWhiteList(skipSet = false) {
@@ -167,7 +174,7 @@ function displayWhiteList(skipSet = false) {
         whiteListContainer.classList.remove("hidden");
     }
     if (!skipSet) {
-        websiteName.innerHTML = currentWebsite;
+        websiteName.textContent = currentWebsite;
         whiteList.checked = !settings.whitelist.includes(currentWebsite);
     }
     if (whiteList.checked) {
@@ -223,8 +230,9 @@ function updateCheckbox(key) {
 }
 
 function changeLanguage(lang, settings) {
-    document.body.lang = lang;
-    document.getElementById("container").dir = HB_TRANSLATIONS_DIR[lang];
+    lang = Object.hasOwn(HB_TRANSLATIONS_DIR, lang) ? lang : "en";
+    document.documentElement.lang = lang;
+    document.documentElement.dir = HB_TRANSLATIONS_DIR[lang];
 
     const translations = getTranslations(settings)?.[lang];
     const keys = Object.keys(translations);
@@ -241,6 +249,9 @@ function changeLanguage(lang, settings) {
 
     settings.language = lang;
     chrome.storage.sync.set({ "hb-settings": settings });
+    displayWhiteList();
+    document.querySelectorAll(".form-range").forEach(updateRangeDisplay);
+    updateProtectionStatus();
 }
 
 function updateWhitelist(e) {
@@ -270,7 +281,11 @@ function sendUpdatedSettings(key) {
     chrome.runtime.sendMessage(message);
     chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
         var activeTab = tabs[0];
-        chrome.tabs.sendMessage(activeTab.id, message);
+        if (activeTab?.id && currentWebsite) {
+            chrome.tabs.sendMessage(activeTab.id, message, () => {
+                void chrome.runtime.lastError;
+            });
+        }
     });
 }
 
@@ -278,4 +293,25 @@ function showRefreshMessage(key) {
     if (refreshableSettings.includes(key)) {
         refreshMessage.classList.remove("hidden");
     }
+}
+
+function updateRangeDisplay(input) {
+    const progress =
+        ((+input.value - +input.min) / (+input.max - +input.min)) * 100;
+    input.style.setProperty("--range-progress", `${progress}%`);
+    const value =
+        input.name === "strictness"
+            ? Math.round(+input.value * 100)
+            : input.value;
+    const outputId =
+        input.name === "strictness" ? "strictness-value" : "blur-amount-value";
+    document.getElementById(outputId).textContent = `${value}%`;
+    input.setAttribute("aria-valuetext", `${value}%`);
+}
+
+function updateProtectionStatus() {
+    document.body.dataset.enabled = String(Boolean(settings.status));
+    const translations = getTranslations(settings)[settings.language ?? "en"];
+    document.getElementById("protection-status").textContent =
+        translations["#protection-status"];
 }
